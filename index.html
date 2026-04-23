@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POD Prompt Generator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; color: #1a1a18; min-height: 100vh; padding: 2rem 1rem 4rem; }
+  .wrapper { max-width: 700px; margin: 0 auto; }
+  header { margin-bottom: 1.75rem; }
+  header h1 { font-size: 21px; font-weight: 600; letter-spacing: -0.02em; }
+  header p { font-size: 13px; color: #888; margin-top: 3px; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; margin-top: 6px; }
+
+  .card { background: #fff; border: 1px solid #e8e6e0; border-radius: 14px; padding: 1.25rem 1.5rem; margin-bottom: 1rem; }
+  .section-label { font-size: 11px; font-weight: 600; color: #bbb; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 9px; }
+
+  .upload-zone { border: 2px dashed #d0cec8; border-radius: 12px; min-height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; position: relative; background: #fafaf8; }
+  .upload-zone:hover { border-color: #7c3aed; background: #faf5ff; }
+  .upload-zone.has-image { border-style: solid; border-color: #7c3aed; min-height: unset; background: #fff; padding: 0; }
+  .upload-zone img { width: 100%; max-height: 240px; object-fit: contain; border-radius: 11px; display: block; }
+  .upload-icon { font-size: 26px; margin-bottom: 8px; }
+  .upload-text { font-size: 14px; color: #666; font-weight: 500; }
+  .upload-sub { font-size: 12px; color: #bbb; margin-top: 4px; }
+  .change-btn { position: absolute; top: 8px; right: 8px; font-size: 12px; padding: 4px 11px; border: 1px solid #e0e0da; border-radius: 7px; background: #fff; color: #666; cursor: pointer; }
+
+  .chip-row { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 8px; }
+  .chip { border: 1px solid #e8e6e0; border-radius: 20px; padding: 6px 14px; font-size: 13px; color: #666; background: #fff; cursor: pointer; font-family: inherit; transition: all 0.12s; }
+  .chip:hover { border-color: #c4b5fd; color: #6d28d9; background: #faf5ff; }
+  .chip.sel { border: 1.5px solid #7c3aed; background: #f3e8ff; color: #6d28d9; font-weight: 500; }
+  .style-chip { border-radius: 8px; font-size: 12px; }
+
+  .custom-input { width: 100%; border: 1px solid #e8e6e0; border-radius: 10px; padding: 9px 13px; font-size: 13px; font-family: inherit; color: #1a1a18; background: #fafaf8; transition: border-color 0.12s; }
+  .custom-input:focus { outline: none; border-color: #7c3aed; background: #fff; }
+  .custom-input::placeholder { color: #ccc; }
+  .custom-input.sel { border: 1.5px solid #7c3aed; background: #f3e8ff; color: #6d28d9; }
+  .input-hint { font-size: 11px; color: #ccc; margin-top: 5px; }
+
+  .desc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: .75rem; }
+  .field label { font-size: 12px; color: #888; display: block; margin-bottom: 4px; }
+  .field input { width: 100%; border: 1px solid #e8e6e0; border-radius: 8px; padding: 8px 11px; font-size: 13px; font-family: inherit; color: #1a1a18; background: #fafaf8; }
+  .field input:focus { outline: none; border-color: #7c3aed; background: #fff; }
+  .field input::placeholder { color: #ccc; }
+
+  .mat-row { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 4px; }
+  .mat-chip { border: 1px solid #e8e6e0; border-radius: 8px; padding: 6px 13px; font-size: 12px; color: #666; background: #fafaf8; cursor: pointer; font-family: inherit; transition: all 0.12s; white-space: nowrap; }
+  .mat-chip:hover { border-color: #c4b5fd; color: #6d28d9; background: #faf5ff; }
+  .mat-chip.sel { border: 1.5px solid #7c3aed; background: #f3e8ff; color: #6d28d9; font-weight: 500; }
+  .mat-label { font-size: 11px; color: #bbb; margin-bottom: 7px; display: block; }
+
+  .niche-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 7px; margin-bottom: 8px; }
+  .niche-btn { border: 1px solid #e8e6e0; border-radius: 10px; padding: 8px 12px; font-size: 13px; color: #666; background: #fafaf8; cursor: pointer; text-align: left; transition: all 0.12s; font-family: inherit; line-height: 1.4; }
+  .niche-btn:hover { border-color: #c4b5fd; color: #6d28d9; background: #faf5ff; }
+  .niche-btn.sel { border: 1.5px solid #7c3aed; background: #f3e8ff; color: #6d28d9; }
+  .niche-tag { font-size: 10px; opacity: 0.6; display: block; margin-top: 2px; font-weight: 500; }
+
+  /* Generate button */
+  .gen-btn { width: 100%; padding: 14px; background: #7c3aed; color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 500; cursor: pointer; font-family: inherit; transition: background 0.15s, transform 0.1s; margin-bottom: 1rem; }
+  .gen-btn:hover { background: #6d28d9; transform: translateY(-1px); }
+  .gen-btn:active { transform: translateY(0); }
+
+  /* Output */
+  .output-card { background: #fff; border: 1px solid #e8e6e0; border-radius: 14px; overflow: hidden; display: none; margin-bottom: 1rem; }
+  .output-header { padding: 11px 16px; border-bottom: 1px solid #f0eeea; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  .output-title { font-size: 13px; font-weight: 500; color: #555; }
+  .out-actions { display: flex; gap: 7px; flex-wrap: wrap; }
+  .act-btn { font-size: 12px; padding: 5px 14px; border: 1px solid #e8e6e0; border-radius: 8px; background: #fafaf8; color: #555; cursor: pointer; font-family: inherit; transition: all 0.12s; white-space: nowrap; }
+  .act-btn:hover { background: #f0eeea; }
+  .act-btn.purple { color: #7c3aed; }
+  .act-btn.purple:hover { background: #f3e8ff; }
+  .act-btn.ok { background: #e8f5e9; border-color: #a5d6a7; color: #2e7d32; }
+
+  .tabs { display: flex; gap: 6px; padding: 10px 16px; border-bottom: 1px solid #f0eeea; overflow-x: auto; }
+  .tab { font-size: 12px; padding: 4px 12px; border: 1px solid #e8e6e0; border-radius: 20px; background: #fafaf8; color: #888; cursor: pointer; white-space: nowrap; font-family: inherit; }
+  .tab:hover { background: #f0eeea; }
+  .tab.active { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+
+  .output-text { padding: 18px; font-size: 13px; line-height: 1.85; color: #333; white-space: pre-wrap; font-family: 'SF Mono','Fira Code','Courier New',monospace; max-height: 300px; overflow-y: auto; }
+
+  /* Image generation section */
+  .img-section { border-top: 1px solid #f0eeea; padding: 16px; }
+  .img-section-title { font-size: 12px; font-weight: 600; color: #888; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .img-gen-btn { width: 100%; padding: 11px; background: #1a1a18; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; transition: background 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .img-gen-btn:hover { background: #333; }
+  .img-gen-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .img-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .img-slot { border: 1px solid #e8e6e0; border-radius: 10px; overflow: hidden; aspect-ratio: 1; background: #fafaf8; display: flex; align-items: center; justify-content: center; position: relative; }
+  .img-slot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .img-slot .loading-state { text-align: center; color: #aaa; font-size: 12px; padding: 1rem; }
+  .img-slot .spinner { width: 28px; height: 28px; border: 2px solid #e8e6e0; border-top-color: #7c3aed; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .img-slot .img-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0); display: flex; align-items: flex-end; justify-content: flex-end; padding: 8px; opacity: 0; transition: opacity 0.15s; }
+  .img-slot:hover .img-overlay { opacity: 1; }
+  .dl-btn { font-size: 11px; padding: 4px 10px; background: rgba(0,0,0,0.65); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-family: inherit; }
+
+  .img-options { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .img-opt-btn { font-size: 12px; padding: 5px 13px; border: 1px solid #e8e6e0; border-radius: 20px; background: #fafaf8; color: #666; cursor: pointer; font-family: inherit; transition: all 0.12s; }
+  .img-opt-btn:hover { border-color: #c4b5fd; color: #6d28d9; background: #faf5ff; }
+  .img-opt-btn.sel { border: 1.5px solid #7c3aed; background: #f3e8ff; color: #6d28d9; }
+
+  .tip-box { padding: 12px 15px; background: #f3e8ff; border-radius: 10px; font-size: 12px; color: #6d28d9; line-height: 1.6; margin-top: 10px; }
+  .tip-box strong { font-weight: 600; }
+  .notice { font-size: 11px; color: #aaa; margin-top: 8px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <header>
+    <h1>POD Prompt Generator</h1>
+    <p>Điền thông tin → tạo prompt → gen ảnh ngay trong trang</p>
+    <span class="badge">✓ Tạo ảnh miễn phí · Không cần API key</span>
+  </header>
+
+  <!-- Upload -->
+  <div class="card">
+    <p class="section-label">Ảnh mẫu (để nhìn khi điền thông tin)</p>
+    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-icon">🖼️</div>
+      <p class="upload-text">Upload ảnh sản phẩm mẫu</p>
+      <p class="upload-sub">Chỉ để xem — không gửi đi đâu cả</p>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFile(this)">
+  </div>
+
+  <!-- Product -->
+  <div class="card">
+    <p class="section-label">Loại sản phẩm</p>
+    <div class="chip-row" id="prodChips">
+      <button class="chip sel" onclick="selProd(this,'graduation stole')">🎓 Stole</button>
+      <button class="chip" onclick="selProd(this,'t-shirt')">👕 T-Shirt</button>
+      <button class="chip" onclick="selProd(this,'mug')">☕ Mug</button>
+      <button class="chip" onclick="selProd(this,'tote bag')">🛍️ Tote Bag</button>
+      <button class="chip" onclick="selProd(this,'hoodie')">🧥 Hoodie</button>
+      <button class="chip" onclick="selProd(this,'poster')">🖼 Poster</button>
+      <button class="chip" onclick="selProd(this,'tumbler')">🥤 Tumbler</button>
+      <button class="chip" onclick="selProd(this,'phone case')">📱 Phone Case</button>
+      <button class="chip" onclick="selProd(this,'pillow')">🛋️ Pillow</button>
+      <button class="chip" onclick="selProd(this,'ornament')">✨ Ornament</button>
+      <button class="chip" onclick="selProd(this,'sweatshirt')">🧶 Sweatshirt</button>
+      <button class="chip" onclick="selProd(this,'canvas wall art')">🎨 Canvas</button>
+      <button class="chip" onclick="selProd(this,'sticker')">🏷️ Sticker</button>
+      <button class="chip" onclick="selProd(this,'apron')">👨‍🍳 Apron</button>
+      <button class="chip" onclick="selProd(this,'hat / cap')">🧢 Hat</button>
+      <button class="chip" onclick="selProd(this,'blanket')">🛏️ Blanket</button>
+      <button class="chip" onclick="selProd(this,'journal / notebook')">📓 Journal</button>
+    </div>
+    <input class="custom-input" id="customProd" type="text"
+      placeholder="Hoặc tự nhập... (keychain, pennant, socks, banner...)"
+      oninput="handleCustomProd(this)" onfocus="handleCustomProdFocus(this)">
+    <p class="input-hint">Gõ tự do — không giới hạn</p>
+  </div>
+
+  <!-- Description -->
+  <div class="card">
+    <p class="section-label">Mô tả sản phẩm gốc</p>
+    <div class="desc-grid">
+      <div class="field"><label>Màu chính *</label><input type="text" id="color1" placeholder="pink, navy, white..."></div>
+      <div class="field"><label>Màu phụ / accent</label><input type="text" id="color2" placeholder="gold, silver, red..."></div>
+    </div>
+    <div class="field" style="margin-bottom:.75rem">
+      <label>Chất liệu / finish</label>
+      <span class="mat-label" id="matHint"></span>
+      <div class="mat-row" id="matChips"></div>
+      <input class="custom-input" id="customMat" type="text" placeholder="Hoặc tự nhập chất liệu..." oninput="handleCustomMat(this)" onfocus="handleCustomMatFocus(this)" style="margin-top:6px">
+    </div>
+    <div class="field">
+      <label>Motif / họa tiết chính</label>
+      <input type="text" id="motif" placeholder="floral border, geometric pattern, star, animal...">
+    </div>
+  </div>
+
+  <!-- Niche -->
+  <div class="card">
+    <p class="section-label">Niche target</p>
+    <div class="niche-grid">
+      <button class="niche-btn" onclick="selNiche(this,'Class of 2026')">Class of 2026<span class="niche-tag">General grad</span></button>
+      <button class="niche-btn" onclick="selNiche(this,'Nursing / Healthcare workers')">Nursing / RN<span class="niche-tag">Healthcare</span></button>
+      <button class="niche-btn" onclick="selNiche(this,'Hispanic / Latina community')">Hispanic / Latina<span class="niche-tag">Cultural</span></button>
+      <button class="niche-btn" onclick="selNiche(this,'Black / African American community')">Black culture<span class="niche-tag">Cultural</span></button>
+      <button class="niche-btn" onclick="selNiche(this,'Christian faith community')">Christian<span class="niche-tag">Religious</span></button>
+      <button class="niche-btn" onclick="selNiche(this,'Kids / children')">Kids<span class="niche-tag">Children</span></button>
+      <button class="niche-btn" onclick="selNiche(this,'High school seniors')">High school<span class="niche-tag">Teens</span></button>
+      <button class="niche-btn" onclick="selNiche(this,'Personalized gift — name, year, quote')">Personalized<span class="niche-tag">Custom gift</span></button>
+      <button class="niche-btn" onclick="selNiche(this,'Teachers / educators')">Teachers<span class="niche-tag">Education</span></button>
+      <button class="niche-btn" onclick="selNiche(this,'Filipino / Philippine culture')">Filipino<span class="niche-tag">Cultural</span></button>
+      <button class="niche-btn" onclick="selNiche(this,'Law / legal professionals')">Law / Legal<span class="niche-tag">Professional</span></button>
+      <button class="niche-btn" onclick="selNiche(this,'Dog lovers / pet owners')">Dog lovers<span class="niche-tag">Pet</span></button>
+      <button class="niche-btn" onclick="selNiche(this,'Cat lovers / pet owners')">Cat lovers<span class="niche-tag">Pet</span></button>
+      <button class="niche-btn" onclick="selNiche(this,'Military / veterans')">Military<span class="niche-tag">Patriotic</span></button>
+      <button class="niche-btn" onclick="selNiche(this,'Mom / mothers')">Moms<span class="niche-tag">Family</span></button>
+      <button class="niche-btn" onclick="selNiche(this,'Couples / wedding / anniversary')">Couples<span class="niche-tag">Romance</span></button>
+      <button class="niche-btn" onclick="selNiche(this,'Halloween / spooky season')">Halloween<span class="niche-tag">Holiday</span></button>
+      <button class="niche-btn" onclick="selNiche(this,'Christmas / holiday season')">Christmas<span class="niche-tag">Holiday</span></button>
+    </div>
+    <input class="custom-input" id="customNiche" type="text"
+      placeholder="Hoặc gõ niche bất kỳ... (camping, yoga, coffee addict, gardening...)"
+      oninput="handleCustomNiche(this)" onfocus="handleCustomNicheFocus(this)">
+    <p class="input-hint">Không giới hạn — gõ tự do</p>
+  </div>
+
+  <!-- Style -->
+  <div class="card">
+    <p class="section-label">Hướng sáng tạo</p>
+    <div class="chip-row" id="styleChips">
+      <button class="chip style-chip sel" onclick="selStyle(this,'bold creative')">Bold creative</button>
+      <button class="chip style-chip" onclick="selStyle(this,'elegant minimal')">Elegant minimal</button>
+      <button class="chip style-chip" onclick="selStyle(this,'maximalist')">Maximalist</button>
+      <button class="chip style-chip" onclick="selStyle(this,'retro vintage')">Retro vintage</button>
+      <button class="chip style-chip" onclick="selStyle(this,'modern trendy')">Modern trendy</button>
+      <button class="chip style-chip" onclick="selStyle(this,'hand-drawn illustrative')">Hand-drawn</button>
+      <button class="chip style-chip" onclick="selStyle(this,'watercolor & floral')">Watercolor floral</button>
+      <button class="chip style-chip" onclick="selStyle(this,'boho / bohemian')">Boho</button>
+      <button class="chip style-chip" onclick="selStyle(this,'glitter & glamour')">Glitter & glamour</button>
+      <button class="chip style-chip" onclick="selStyle(this,'dark & moody')">Dark & moody</button>
+    </div>
+    <input class="custom-input" id="customStyle" type="text"
+      placeholder="Hoặc tự nhập... (cottagecore, Y2K, art deco, neon cyberpunk...)"
+      oninput="handleCustomStyle(this)" onfocus="handleCustomStyleFocus(this)">
+    <p class="input-hint">Gõ tự do — bất kỳ phong cách nào</p>
+  </div>
+
+  <button class="gen-btn" onclick="generate()">Tạo prompt & xem trước ảnh ↗</button>
+
+  <!-- Output -->
+  <div class="output-card" id="outputCard">
+    <div class="output-header">
+      <span class="output-title" id="outputTitle">Prompt</span>
+      <div class="out-actions">
+        <button class="act-btn purple" onclick="generate()">↻ Prompt mới</button>
+        <button class="act-btn" id="copyBtn" onclick="copyPrompt()">Sao chép prompt</button>
+      </div>
+    </div>
+    <div class="tabs" id="tabsEl"></div>
+    <div class="output-text" id="outputText"></div>
+
+    <!-- Image generation -->
+    <div class="img-section">
+      <div class="img-section-title">
+        🎨 Tạo ảnh từ prompt này
+      </div>
+
+      <div class="img-options" id="imgOpts">
+        <button class="img-opt-btn sel" onclick="selImgOpt(this,'1')">1 ảnh</button>
+        <button class="img-opt-btn" onclick="selImgOpt(this,'2')">2 ảnh</button>
+        <button class="img-opt-btn" onclick="selImgOpt(this,'4')">4 ảnh</button>
+        <button class="img-opt-btn sel" id="sqBtn" onclick="selAspect(this,'1024x1024','square')">Vuông</button>
+        <button class="img-opt-btn" onclick="selAspect(this,'1024x1792','portrait')">Dọc</button>
+        <button class="img-opt-btn" onclick="selAspect(this,'1792x1024','landscape')">Ngang</button>
+      </div>
+
+      <button class="img-gen-btn" id="imgGenBtn" onclick="generateImages()">
+        ✦ Tạo ảnh ngay — miễn phí
+      </button>
+      <p class="notice">Dùng Pollinations AI · Miễn phí · Không cần tài khoản · Cần kết nối internet · Mỗi ảnh ~15-30 giây</p>
+
+      <div class="img-grid" id="imgGrid" style="display:none"></div>
+    </div>
+  </div>
+
+  <div class="tip-box" id="tipBox" style="display:none">
+    <strong>Tip:</strong> Nhấn <em>↻ Prompt mới</em> để ra prompt khác → nhấn lại <em>Tạo ảnh</em> để gen lại.<br>
+    Hover lên ảnh → nhấn <strong>Tải về</strong> để lưu ảnh.
+  </div>
+</div>
+
+<script>
+const state = { prod:'graduation stole', style:'bold creative', niche:null, mat:'', imgCount:'1', imgSize:'1024x1024' };
+let currentPrompts = [];
+let currentImgPrompt = '';
+
+// ── NICHE DATA ────────────────────────────────────────────────────────────────
+const ND = {
+  'Class of 2026':{ colors:['navy blue','white','gold'], symbols:['laurel wreath','diploma scroll','graduation cap','year numerals 2026','academic seal'], textThemes:['Class of 2026','Congrats Grad','Senior 2026'], mood:'celebratory, proud, milestone' },
+  'Nursing / Healthcare workers':{ colors:['white','royal blue','soft mint'], symbols:['stethoscope','heartbeat line','red cross','caduceus','medical star'], textThemes:['Nurse Life','RN','Healthcare Hero','Caring Hands'], mood:'professional, caring, compassionate' },
+  'Hispanic / Latina community':{ colors:['terracotta','red','cream','gold'], symbols:['mariposa butterfly','tropical florals','sun rays','aztec geometric pattern','cactus'], textThemes:['Latina Power','Mi Cultura','Orgullo Latino','Familia'], mood:'vibrant, warm, culturally proud' },
+  'Black / African American community':{ colors:['black','gold','purple'], symbols:['Kente cloth pattern','African sun','geometric tribal border','raised fist','afro silhouette'], textThemes:['Black Excellence','Melanin','Unapologetically Black'], mood:'bold, powerful, culturally affirming' },
+  'Christian faith community':{ colors:['white','gold','dove grey'], symbols:['cross','dove','praying hands','olive branch','ichthys fish'], textThemes:['Faith Over Fear','Blessed','God is Good'], mood:'spiritual, peaceful, inspirational' },
+  'Kids / children':{ colors:['sky blue','yellow','coral','mint'], symbols:['rainbow','star','dinosaur','unicorn','crayon','balloon','cloud'], textThemes:['Little One','Adventure Awaits','Tiny Human','Be Kind'], mood:'joyful, playful, colorful, cute' },
+  'High school seniors':{ colors:['school colors','silver','white'], symbols:['senior crown','infinity loop','lightning bolt','class year banner'], textThemes:['Senior 2026','Finally Free','Class Dismissed'], mood:'energetic, fun, milestone' },
+  'Personalized gift — name, year, quote':{ colors:['ivory','champagne','dusty rose'], symbols:['monogram frame','botanical sprig','flourish','ribbon banner','geometric frame'], textThemes:['[Name]','Custom Quote','Est. [Year]'], mood:'personal, elegant, meaningful' },
+  'Teachers / educators':{ colors:['apple red','chalkboard green','yellow','cream'], symbols:['apple','open book','pencil','ruler','ABC lettering','blackboard'], textThemes:['Teacher Life','Best Teacher','Teach Love Inspire'], mood:'warm, inspiring, nostalgic' },
+  'Filipino / Philippine culture':{ colors:['Philippine blue','red','gold','white'], symbols:['sampaguita flower','Philippine sun 8 rays','tropical palm','jeepney silhouette','bamboo'], textThemes:['Pinoy Pride','Mabuhay','Filipino'], mood:'proud, festive, cultural' },
+  'Law / legal professionals':{ colors:['navy','gold','charcoal'], symbols:['scales of justice','gavel','law book','classical column','laurel'], textThemes:['Lawyer Life','Esquire','Order in the Court'], mood:'authoritative, professional, distinguished' },
+  'Dog lovers / pet owners':{ colors:['warm tan','white','burnt orange'], symbols:['dog paw print','dog silhouette','bone','heart','dog portrait sketch'], textThemes:['Dog Mom','Paw Print','Fur Baby','Best Dog Dad'], mood:'warm, fun, loving' },
+  'Cat lovers / pet owners':{ colors:['lavender','cream','dusty rose'], symbols:['cat silhouette','paw print','fish','yarn ball','whisker face'], textThemes:['Cat Mom','Crazy Cat Lady','Meow'], mood:'playful, quirky, cute' },
+  'Military / veterans':{ colors:['olive drab','military gold','navy'], symbols:['eagle','dog tags','American flag','stars','service branch insignia'], textThemes:['Army Strong','Veteran','Land of the Free'], mood:'patriotic, strong, honorable' },
+  'Mom / mothers':{ colors:['blush pink','cream','sage green'], symbols:['floral bouquet','heart','mother and child silhouette','butterfly','sunflower'], textThemes:['Mom Life','Best Mom','Mama Bear'], mood:'warm, loving, tender' },
+  'Couples / wedding / anniversary':{ colors:['blush','champagne','white','gold'], symbols:['intertwined rings','floral arch','heart','date numerals'], textThemes:['Est. 2024','Forever and Always','Mr and Mrs'], mood:'romantic, elegant, celebratory' },
+  'Halloween / spooky season':{ colors:['pumpkin orange','black','purple'], symbols:['jack-o-lantern','ghost','spider web','bat','skull','witch hat','moon'], textThemes:['Trick or Treat','Spooky Season','Boo','Witch Please'], mood:'spooky, fun, playful' },
+  'Christmas / holiday season':{ colors:['Christmas red','pine green','gold','white'], symbols:['Christmas tree','snowflake','reindeer','ornament','candy cane','star'], textThemes:['Merry Christmas','Jolly','Ho Ho Ho'], mood:'festive, warm, joyful' },
+};
+
+const PROD_CONTEXT = {
+  'graduation stole':  { format:'V-shaped fabric sash worn over shoulders', designArea:'full length of both panels', outputSpec:'flat lay on white background, both panels fully visible, print-ready' },
+  't-shirt':           { format:'crew-neck t-shirt', designArea:'front chest area', outputSpec:'flat lay on white background, front view, wrinkle-free' },
+  'mug':               { format:'11oz ceramic coffee mug', designArea:'wrap-around surface', outputSpec:'product shot on white background, design clearly visible' },
+  'tote bag':          { format:'reusable canvas tote bag', designArea:'front face panel', outputSpec:'flat lay on white background, front panel fully visible' },
+  'hoodie':            { format:'pullover hoodie', designArea:'front chest and body', outputSpec:'flat lay on white background, front view' },
+  'poster':            { format:'vertical wall poster', designArea:'full poster surface', outputSpec:'flat lay or wall mockup, high resolution, print-ready' },
+  'tumbler':           { format:'20oz stainless steel tumbler', designArea:'wrap-around cylindrical surface', outputSpec:'product shot on white background, design visible' },
+  'phone case':        { format:'slim smartphone case', designArea:'back panel', outputSpec:'flat lay on white background, back view, clean render' },
+  'pillow':            { format:'square throw pillow', designArea:'front face', outputSpec:'flat lay on white background, front face fully visible' },
+  'ornament':          { format:'round hanging ornament', designArea:'front surface', outputSpec:'product shot on white background, front design visible' },
+  'sweatshirt':        { format:'crewneck sweatshirt', designArea:'front chest', outputSpec:'flat lay on white background, front view' },
+  'canvas wall art':   { format:'gallery-wrapped canvas print', designArea:'full canvas surface', outputSpec:'mockup on wall or flat lay, print-ready' },
+  'sticker':           { format:'die-cut vinyl sticker', designArea:'entire sticker shape', outputSpec:'flat lay on white background, clean cut edge, no background behind design' },
+  'apron':             { format:'full-body kitchen apron', designArea:'front bib and body', outputSpec:'flat lay on white background, front view' },
+  'hat / cap':         { format:'structured baseball cap', designArea:'front panel', outputSpec:'product shot on white background, front panel facing forward' },
+  'blanket':           { format:'throw blanket', designArea:'full blanket surface', outputSpec:'flat lay on soft surface, design fully visible' },
+  'journal / notebook':{ format:'hardcover journal', designArea:'front cover', outputSpec:'flat lay on white background, cover facing up' },
+  'default':           { format:'product', designArea:'main design surface', outputSpec:'product shot on white background, design clearly visible' },
+};
+
+const MAT_OPTIONS = {
+  'graduation stole':  { hint:'Chất liệu vải', opts:['Satin (shiny smooth)','Matte fabric','Velvet','Embroidered','Sublimation on satin'] },
+  't-shirt':           { hint:'Chất liệu / in', opts:['Soft cotton jersey','100% cotton','Tri-blend','DTG print','Screen print'] },
+  'hoodie':            { hint:'Chất liệu', opts:['Fleece-lined cotton','French terry','Tie-dye sublimation','DTG on heavy fleece'] },
+  'sweatshirt':        { hint:'Chất liệu', opts:['Heavyweight fleece','Vintage wash fleece','Sublimation all-over','Cotton blend'] },
+  'apron':             { hint:'Chất liệu', opts:['Heavy canvas','Linen texture','Waterproof poly','Cotton twill'] },
+  'hat / cap':         { hint:'Kiểu / chất liệu', opts:['Structured baseball cap','Dad hat','Trucker mesh back','Embroidered patch'] },
+  'tote bag':          { hint:'Chất liệu', opts:['Natural canvas','Sublimation on poly','Jute burlap','Non-woven poly'] },
+  'blanket':           { hint:'Chất liệu', opts:['Sherpa fleece','Woven tapestry','Sublimation on fleece','Minky soft touch'] },
+  'mug':               { hint:'Finish', opts:['Glossy ceramic white','Matte ceramic','Two-tone color-inside','Enamel camp mug','Metallic luster'] },
+  'tumbler':           { hint:'Finish', opts:['Stainless steel matte','Glossy stainless','Powder coat','Glitter epoxy','Holographic chrome'] },
+  'phone case':        { hint:'Finish', opts:['Glossy hard case','Matte soft TPU','Clear with design','Glitter inlay'] },
+  'ornament':          { hint:'Chất liệu', opts:['Glossy ceramic','Acrylic flat laser-cut','Sublimation aluminum','Frosted glass','Wooden birch'] },
+  'poster':            { hint:'Chất giấy', opts:['Glossy photo paper','Matte art print','Kraft paper vintage','Metallic foil','Luster fine art'] },
+  'canvas wall art':   { hint:'Finish', opts:['Gallery-wrapped canvas','Matte canvas print','Linen texture canvas','Stretched canvas'] },
+  'pillow':            { hint:'Chất liệu', opts:['Sublimation poly cover','Linen texture','Velvet cover','Sherpa back'] },
+  'journal / notebook':{ hint:'Chất liệu bìa', opts:['Hardcover matte','Softcover flexible','Faux leather embossed','Kraft paper'] },
+  'sticker':           { hint:'Chất liệu', opts:['Glossy vinyl','Matte vinyl','Holographic vinyl','Transparent clear vinyl','Kraft paper label'] },
+  'default':           { hint:'Finish', opts:['Glossy finish','Matte finish','Sublimation print','Metallic foil','Natural texture'] },
+};
+
+const STYLE_DIR = {
+  'bold creative':           'Reimagine completely — new color story, redesigned motifs, fresh composition. Inspired by but distinctly different from the original.',
+  'elegant minimal':         'Refined and restrained. Typography as hero. Generous white space. 2–3 colors maximum.',
+  'maximalist':              'Layer richly — ornate borders, multiple decorative elements, full color saturation.',
+  'retro vintage':           'Aged textures, distressed edges, warm sepia palette (ochre, rust, cream, antique gold).',
+  'modern trendy':           'Clean geometry, generous white space, current palette (terracotta, sage, warm beige). Typography-forward.',
+  'hand-drawn illustrative': 'Organic hand-drawn lines, loose botanical sketches, ink texture or watercolor washes.',
+  'watercolor & floral':     'Soft watercolor washes, loose painted botanicals, delicate translucent petal layers. Romantic.',
+  'boho / bohemian':         'Earthy tones (terracotta, rust, sage, cream), macramé-inspired patterns, free-spirited layers.',
+  'glitter & glamour':       'High-shine metallics, holographic glitter texture, foil-effect lettering, jewel-tone palette.',
+  'dark & moody':            'Deep jewel tones (midnight, burgundy, forest green), dramatic contrast, celestial or gothic motifs.',
+};
+
+const PALETTE_TR = {
+  'bold creative':           (c) => `reimagined: bolder ${c[0]}, pushed ${c[1]}, unexpected accent (burnt amber or electric teal)`,
+  'elegant minimal':         (c) => `understated: soft ${c[0]}, warm white, single accent of ${c[1]}`,
+  'maximalist':              (c) => `rich layered: deep ${c[0]}, luminous ${c[1]}, warm ivory, metallic gold throughout`,
+  'retro vintage':           ()  => `aged ochre, antique cream, rust brown, faded gold`,
+  'modern trendy':           (c) => `terracotta or sage as base, ${c[0]} as accent, clean white space`,
+  'hand-drawn illustrative': (c) => `watercolor washes of ${c[0]} and ${c[1]}, ink outlines, unpainted paper feel`,
+  'watercolor & floral':     (c) => `blush ${c[0]}, soft ${c[1]}, ivory white — translucent watercolor layers`,
+  'boho / bohemian':         ()  => `warm terracotta, dusty sage, rust orange, cream`,
+  'glitter & glamour':       (c) => `holographic ${c[0]}, metallic ${c[1]}, jewel-tone accents, glitter overlay`,
+  'dark & moody':            (c) => `deep midnight, rich burgundy, darkened ${c[0]} — dramatic high-contrast`,
+};
+
+function getStyleDir(s) { return STYLE_DIR[s] || `Apply a ${s} aesthetic — colors, motifs, and composition authentically representing this style.`; }
+function getPalette(s, c) { return (PALETTE_TR[s] || ((c) => `fresh palette for ${s} style using ${c[0]} and ${c[1]}`))(c); }
+function getRandom(arr, n) { return [...arr].sort(()=>Math.random()-.5).slice(0,n); }
+function getProdCtx(p) { return PROD_CONTEXT[p.toLowerCase()] || PROD_CONTEXT['default']; }
+function getMatOpts(p) { return MAT_OPTIONS[p.toLowerCase()] || MAT_OPTIONS['default']; }
+
+function buildImagePrompt() {
+  const c1    = document.getElementById('color1').value.trim() || 'soft pink';
+  const c2    = document.getElementById('color2').value.trim() || 'gold';
+  const mat   = state.mat;
+  const motif = document.getElementById('motif').value.trim() || 'decorative pattern';
+  const niche = state.niche || 'general';
+  const prod  = state.prod;
+  const style = state.style;
+  const pc    = getProdCtx(prod);
+  const nd    = ND[niche] || { colors:[c1,c2,'ivory'], symbols:['decorative motifs','thematic pattern'], textThemes:[niche], mood:'appealing' };
+  const pal   = getPalette(style, nd.colors);
+  const syms  = getRandom(nd.symbols, 3).join(', ');
+  const sdir  = getStyleDir(style);
+
+  // Short optimized prompt for image generation
+  return `${style} design on a ${prod} (${mat}), targeting ${niche} audience. Color palette: ${pal}. Motifs: ${syms}. Original reference had ${c1} and ${c2} with ${motif}. ${sdir} ${pc.outputSpec}. Professional product photography quality, clean background, high detail.`;
+}
+
+function buildTextPrompt(variant) {
+  const c1    = document.getElementById('color1').value.trim() || 'soft pink';
+  const c2    = document.getElementById('color2').value.trim() || 'gold';
+  const mat   = state.mat;
+  const motif = document.getElementById('motif').value.trim() || 'decorative elements';
+  const niche = state.niche || 'general audience';
+  const prod  = state.prod;
+  const style = state.style;
+  const pc    = getProdCtx(prod);
+  const nd    = ND[niche] || { colors:[c1,c2,'ivory'], symbols:['decorative motifs','thematic elements','pattern'], textThemes:[niche], mood:'appealing to the target audience' };
+  const pal   = getPalette(style, nd.colors);
+  const syms  = getRandom(nd.symbols, 3);
+  const text  = getRandom(nd.textThemes, 1)[0];
+  const sdir  = getStyleDir(style);
+
+  if (variant === 'standard') return `Create a new ${prod} design — ${pc.format} — targeting the "${niche}" audience.
+
+ORIGINAL REFERENCE: ${c1} and ${c2} ${mat} ${prod} with ${motif}. Use as style/composition reference only. Do NOT copy.
+
+CREATIVE DIRECTION — ${style.toUpperCase()}:
+${sdir}
+
+PRODUCT SPECS:
+• Format: ${pc.format}
+• Design area: ${pc.designArea}
+• Material / finish: ${mat}
+
+NEW DESIGN:
+• Color palette: ${pal}
+• Visual motifs: ${syms.join(', ')} — adapted to ${style} aesthetic
+• Text idea: "${text}"
+• Mood: ${nd.mood}
+
+OUTPUT: ${pc.outputSpec}, high resolution, no distracting props.
+
+Variations:
+1. Same motifs, different colorway
+2. Typography-only version with minimal illustration`;
+
+  if (variant === 'artistic') return `Design a ${style} ${prod} (${mat}) for the "${niche}" audience.
+
+Transform: ${c1}/${c2} ${prod} with ${motif} → ${style} lens.
+
+${sdir}
+
+— Format: ${pc.format}, design on ${pc.designArea}
+— Colors: ${pal}
+— Motifs: ${syms.map(s=>`${s} (${style})`).join(', ')}
+— Text: "${text}"
+— Feel: ${nd.mood}
+
+${pc.outputSpec}.`;
+
+  return `New ${prod} design (${mat}) for "${niche}". Style: ${style}. Colors: ${pal}. Motifs: ${syms.join(', ')}. Text: "${text}". Design on ${pc.designArea}. ${pc.outputSpec}.`;
+}
+
+// ── IMAGE GENERATION ──────────────────────────────────────────────────────────
+async function generateImages() {
+  const btn = document.getElementById('imgGenBtn');
+  const grid = document.getElementById('imgGrid');
+  const count = parseInt(state.imgCount);
+  const [w, h] = state.imgSize.split('x');
+
+  currentImgPrompt = buildImagePrompt();
+  btn.disabled = true;
+  btn.textContent = '⏳ Đang tạo ảnh...';
+  grid.style.display = 'grid';
+  grid.style.gridTemplateColumns = count === 1 ? '1fr' : count === 2 ? '1fr 1fr' : '1fr 1fr';
+  grid.innerHTML = '';
+
+  // Create placeholder slots
+  for (let i = 0; i < count; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'img-slot';
+    slot.id = `slot-${i}`;
+    slot.innerHTML = `<div class="loading-state"><div class="spinner"></div>Đang tạo ảnh ${i+1}...</div>`;
+    grid.appendChild(slot);
+  }
+
+  // Generate each image
+  const promises = Array.from({length: count}, (_, i) => generateSingleImage(i, w, h));
+  await Promise.all(promises);
+
+  btn.disabled = false;
+  btn.textContent = '✦ Tạo ảnh lại';
+}
+
+async function generateSingleImage(index, w, h) {
+  const slot = document.getElementById(`slot-${index}`);
+  // Add small random seed variation per image
+  const seed = Math.floor(Math.random() * 999999);
+  const encodedPrompt = encodeURIComponent(currentImgPrompt);
+  const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${w}&height=${h}&seed=${seed}&nologo=true&enhance=true`;
+
+  try {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = url;
+    });
+
+    slot.innerHTML = `
+      <img src="${url}" alt="Generated design ${index+1}">
+      <div class="img-overlay">
+        <button class="dl-btn" onclick="downloadImg('${url}', ${index+1})">⬇ Tải về</button>
+      </div>`;
+  } catch {
+    slot.innerHTML = `<div class="loading-state" style="color:#e57373">Lỗi tạo ảnh<br><small>Thử lại</small></div>`;
+  }
+}
+
+async function downloadImg(url, num) {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `pod-design-${num}.jpg`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch {
+    window.open(url, '_blank');
+  }
+}
+
+function selImgOpt(btn, count) {
+  document.querySelectorAll('#imgOpts .img-opt-btn').slice(0,3).forEach(b => {
+    if (['1','2','4'].some(n => b.textContent.includes(n+' ảnh'))) b.classList.remove('sel');
+  });
+  // Just select among count buttons
+  const countBtns = Array.from(document.querySelectorAll('#imgOpts .img-opt-btn')).filter(b => ['1 ảnh','2 ảnh','4 ảnh'].includes(b.textContent));
+  countBtns.forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  state.imgCount = count;
+}
+
+function selAspect(btn, size, type) {
+  const aspectBtns = Array.from(document.querySelectorAll('#imgOpts .img-opt-btn')).filter(b => ['Vuông','Dọc','Ngang'].includes(b.textContent));
+  aspectBtns.forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  state.imgSize = size;
+}
+
+// ── MAIN GENERATE ─────────────────────────────────────────────────────────────
+function generate() {
+  if (!document.getElementById('color1').value.trim()) { alert('Hãy điền màu chính'); return; }
+  if (!state.niche) { alert('Hãy chọn hoặc nhập niche target'); return; }
+
+  currentPrompts = [
+    { label:'Full detail', text: buildTextPrompt('standard') },
+    { label:'Artistic',    text: buildTextPrompt('artistic') },
+    { label:'Short',       text: buildTextPrompt('short') },
+  ];
+
+  const card = document.getElementById('outputCard');
+  card.style.display = 'block';
+  document.getElementById('outputTitle').textContent = `${state.prod} · ${state.niche} · ${state.style}`;
+
+  const tabsEl = document.getElementById('tabsEl');
+  tabsEl.innerHTML = '';
+  currentPrompts.forEach((p,i) => {
+    const t = document.createElement('button');
+    t.className = 'tab'+(i===0?' active':'');
+    t.textContent = p.label;
+    t.onclick = () => {
+      tabsEl.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById('outputText').textContent = currentPrompts[i].text;
+    };
+    tabsEl.appendChild(t);
+  });
+
+  document.getElementById('outputText').textContent = currentPrompts[0].text;
+  document.getElementById('tipBox').style.display = 'block';
+  // Reset image area
+  document.getElementById('imgGrid').style.display = 'none';
+  document.getElementById('imgGrid').innerHTML = '';
+  document.getElementById('imgGenBtn').textContent = '✦ Tạo ảnh ngay — miễn phí';
+  document.getElementById('imgGenBtn').disabled = false;
+
+  setTimeout(() => card.scrollIntoView({ behavior:'smooth', block:'start' }), 80);
+}
+
+function copyPrompt() {
+  const text = document.getElementById('outputText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = 'Đã sao chép ✓'; btn.classList.add('ok');
+    setTimeout(() => { btn.textContent = 'Sao chép prompt'; btn.classList.remove('ok'); }, 2000);
+  });
+}
+
+// ── UI HELPERS ────────────────────────────────────────────────────────────────
+function renderMat(prod) {
+  const { hint, opts } = getMatOpts(prod);
+  document.getElementById('matHint').textContent = hint;
+  const row = document.getElementById('matChips');
+  row.innerHTML = '';
+  state.mat = opts[0];
+  document.getElementById('customMat').value = '';
+  document.getElementById('customMat').classList.remove('sel');
+  opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'mat-chip'+(i===0?' sel':'');
+    btn.textContent = opt;
+    btn.onclick = () => {
+      row.querySelectorAll('.mat-chip').forEach(b=>b.classList.remove('sel'));
+      btn.classList.add('sel'); state.mat = opt;
+      document.getElementById('customMat').value = '';
+      document.getElementById('customMat').classList.remove('sel');
+    };
+    row.appendChild(btn);
+  });
+}
+function handleCustomMat(inp) { const v=inp.value.trim(); document.getElementById('matChips').querySelectorAll('.mat-chip').forEach(b=>b.classList.remove('sel')); state.mat=v||getMatOpts(state.prod).opts[0]; inp.classList.toggle('sel',!!v); }
+function handleCustomMatFocus(inp) { document.getElementById('matChips').querySelectorAll('.mat-chip').forEach(b=>b.classList.remove('sel')); if(inp.value.trim()){state.mat=inp.value.trim();inp.classList.add('sel');} }
+function selProd(btn,prod) { document.querySelectorAll('#prodChips .chip').forEach(b=>b.classList.remove('sel')); btn.classList.add('sel'); state.prod=prod; document.getElementById('customProd').value=''; document.getElementById('customProd').classList.remove('sel'); renderMat(prod); }
+function handleCustomProdFocus(inp) { document.querySelectorAll('#prodChips .chip').forEach(b=>b.classList.remove('sel')); if(inp.value.trim()){state.prod=inp.value.trim();inp.classList.add('sel');renderMat(inp.value.trim());} }
+function handleCustomProd(inp) { const v=inp.value.trim(); document.querySelectorAll('#prodChips .chip').forEach(b=>b.classList.remove('sel')); state.prod=v||'product'; inp.classList.toggle('sel',!!v); renderMat(v||'default'); }
+function selNiche(btn,niche) { document.querySelectorAll('.niche-btn').forEach(b=>b.classList.remove('sel')); btn.classList.add('sel'); state.niche=niche; document.getElementById('customNiche').value=''; document.getElementById('customNiche').classList.remove('sel'); }
+function handleCustomNicheFocus(inp) { document.querySelectorAll('.niche-btn').forEach(b=>b.classList.remove('sel')); if(inp.value.trim()){state.niche=inp.value.trim();inp.classList.add('sel');} }
+function handleCustomNiche(inp) { const v=inp.value.trim(); document.querySelectorAll('.niche-btn').forEach(b=>b.classList.remove('sel')); state.niche=v||null; inp.classList.toggle('sel',!!v); }
+function selStyle(btn,style) { document.querySelectorAll('#styleChips .chip').forEach(b=>b.classList.remove('sel')); btn.classList.add('sel'); state.style=style; document.getElementById('customStyle').value=''; document.getElementById('customStyle').classList.remove('sel'); }
+function handleCustomStyleFocus(inp) { document.querySelectorAll('#styleChips .chip').forEach(b=>b.classList.remove('sel')); if(inp.value.trim()){state.style=inp.value.trim();inp.classList.add('sel');} }
+function handleCustomStyle(inp) { const v=inp.value.trim(); document.querySelectorAll('#styleChips .chip').forEach(b=>b.classList.remove('sel')); state.style=v||'bold creative'; inp.classList.toggle('sel',!!v); }
+function handleFile(input) {
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const z=document.getElementById('uploadZone');
+    z.classList.add('has-image');
+    z.innerHTML=`<img src="${e.target.result}" alt="preview"><button class="change-btn" onclick="event.stopPropagation();changeImage()">Đổi ảnh</button>`;
+  };
+  reader.readAsDataURL(file);
+}
+function changeImage() {
+  const z=document.getElementById('uploadZone');
+  z.classList.remove('has-image');
+  z.innerHTML=`<div class="upload-icon">🖼️</div><p class="upload-text">Upload ảnh sản phẩm mẫu</p><p class="upload-sub">Chỉ để xem — không gửi đi đâu cả</p>`;
+  z.onclick=()=>document.getElementById('fileInput').click();
+  document.getElementById('fileInput').value='';
+}
+
+renderMat('graduation stole');
+</script>
+</body>
+</html>
