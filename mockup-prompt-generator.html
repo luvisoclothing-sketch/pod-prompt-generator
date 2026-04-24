@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POD Mockup Prompt Generator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; color: #1a1a18; min-height: 100vh; padding: 2rem 1rem 4rem; }
+  .wrapper { max-width: 700px; margin: 0 auto; }
+  header { margin-bottom: 1.75rem; }
+  header h1 { font-size: 21px; font-weight: 600; letter-spacing: -0.02em; }
+  header p { font-size: 13px; color: #888; margin-top: 3px; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; margin-top: 6px; }
+  .card { background: #fff; border: 1px solid #e8e6e0; border-radius: 14px; padding: 1.25rem 1.5rem; margin-bottom: 1rem; }
+  .section-label { font-size: 11px; font-weight: 600; color: #bbb; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 9px; }
+  .upload-zone { border: 2px dashed #d0cec8; border-radius: 12px; min-height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; position: relative; background: #fafaf8; overflow: hidden; }
+  .upload-zone:hover { border-color: #0ea47a; background: #f0fdf8; }
+  .upload-zone.has-image { border-style: solid; border-color: #0ea47a; min-height: unset; }
+  .upload-zone img { width: 100%; max-height: 240px; object-fit: contain; display: block; }
+  .upload-icon { font-size: 26px; margin-bottom: 8px; }
+  .upload-text { font-size: 14px; color: #666; font-weight: 500; }
+  .upload-sub { font-size: 12px; color: #bbb; margin-top: 4px; }
+  .change-btn { position: absolute; top: 8px; right: 8px; font-size: 12px; padding: 4px 11px; border: 1px solid #e0e0da; border-radius: 7px; background: #fff; color: #666; cursor: pointer; z-index: 2; }
+  .chip-row { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 8px; }
+  .chip { border: 1px solid #e8e6e0; border-radius: 20px; padding: 6px 14px; font-size: 13px; color: #666; background: #fff; cursor: pointer; font-family: inherit; transition: all 0.12s; }
+  .chip:hover { border-color: #6ee7c5; color: #0a7c5c; background: #f0fdf8; }
+  .chip.sel { border: 1.5px solid #0ea47a; background: #dcfdf4; color: #065f46; font-weight: 500; }
+  .sm-chip { border-radius: 8px; font-size: 12px; }
+  .custom-input { width: 100%; border: 1px solid #e8e6e0; border-radius: 10px; padding: 9px 13px; font-size: 13px; font-family: inherit; color: #1a1a18; background: #fafaf8; transition: border-color 0.12s; }
+  .custom-input:focus { outline: none; border-color: #0ea47a; background: #fff; }
+  .custom-input::placeholder { color: #ccc; }
+  .custom-input.sel { border: 1.5px solid #0ea47a; background: #dcfdf4; color: #065f46; }
+  .input-hint { font-size: 11px; color: #ccc; margin-top: 5px; }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: .75rem; }
+  .field label { font-size: 12px; color: #888; display: block; margin-bottom: 4px; }
+  .field input, .field select { width: 100%; border: 1px solid #e8e6e0; border-radius: 8px; padding: 8px 11px; font-size: 13px; font-family: inherit; color: #1a1a18; background: #fafaf8; }
+  .field input:focus, .field select:focus { outline: none; border-color: #0ea47a; background: #fff; }
+  .field input::placeholder { color: #ccc; }
+  .gen-btn { width: 100%; padding: 14px; background: #0ea47a; color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 500; cursor: pointer; font-family: inherit; transition: background 0.15s, transform 0.1s; margin-bottom: 1rem; }
+  .gen-btn:hover { background: #059669; transform: translateY(-1px); }
+  .gen-btn:active { transform: translateY(0); }
+  .output-card { background: #fff; border: 1px solid #e8e6e0; border-radius: 14px; overflow: hidden; display: none; margin-bottom: 1rem; }
+  .output-header { padding: 11px 16px; border-bottom: 1px solid #f0eeea; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .output-title { font-size: 13px; font-weight: 500; color: #555; }
+  .out-actions { display: flex; gap: 7px; }
+  .act-btn { font-size: 12px; padding: 5px 14px; border: 1px solid #e8e6e0; border-radius: 8px; background: #fafaf8; color: #555; cursor: pointer; font-family: inherit; }
+  .act-btn:hover { background: #f0eeea; }
+  .act-btn.g { color: #0ea47a; }
+  .act-btn.g:hover { background: #f0fdf8; }
+  .act-btn.ok { background: #e8f5e9; border-color: #a5d6a7; color: #2e7d32; }
+  .tabs { display: flex; gap: 6px; padding: 10px 16px; border-bottom: 1px solid #f0eeea; overflow-x: auto; }
+  .tab { font-size: 12px; padding: 4px 12px; border: 1px solid #e8e6e0; border-radius: 20px; background: #fafaf8; color: #888; cursor: pointer; white-space: nowrap; font-family: inherit; }
+  .tab:hover { background: #f0eeea; }
+  .tab.active { background: #0ea47a; color: #fff; border-color: #0ea47a; }
+  .output-text { padding: 18px; font-size: 13px; line-height: 1.85; color: #333; white-space: pre-wrap; font-family: 'SF Mono','Fira Code','Courier New',monospace; max-height: 400px; overflow-y: auto; }
+  .tip-box { padding: 12px 15px; background: #f0fdf8; border: 1px solid #a7f3d0; border-radius: 10px; font-size: 12px; color: #065f46; line-height: 1.7; }
+  .tip-box strong { font-weight: 600; }
+  .tip-box code { background: #dcfdf4; padding: 1px 5px; border-radius: 4px; font-family: monospace; font-size: 11px; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <header>
+    <h1>Mockup Scene Prompt Generator</h1>
+    <p>Chọn sản phẩm + scene + niche → nhận prompt mockup cho ChatGPT / DALL-E 3 / Midjourney</p>
+    <span class="badge">✓ Không cần API · Chạy offline</span>
+  </header>
+
+  <div class="card">
+    <p class="section-label">Ảnh design của bạn (để nhìn khi điền)</p>
+    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-icon">🎨</div>
+      <p class="upload-text">Upload ảnh design hoặc sản phẩm của bạn</p>
+      <p class="upload-sub">Chỉ để xem — không gửi đi đâu cả</p>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFile(this)">
+  </div>
+
+  <!-- Product -->
+  <div class="card">
+    <p class="section-label">Loại sản phẩm</p>
+    <div class="chip-row" id="prodChips">
+      <button class="chip sel" onclick="sel('prod',this,'graduation stole')">🎓 Stole</button>
+      <button class="chip" onclick="sel('prod',this,'t-shirt')">👕 T-Shirt</button>
+      <button class="chip" onclick="sel('prod',this,'mug')">☕ Mug</button>
+      <button class="chip" onclick="sel('prod',this,'tote bag')">🛍️ Tote Bag</button>
+      <button class="chip" onclick="sel('prod',this,'hoodie')">🧥 Hoodie</button>
+      <button class="chip" onclick="sel('prod',this,'tumbler')">🥤 Tumbler</button>
+      <button class="chip" onclick="sel('prod',this,'phone case')">📱 Phone Case</button>
+      <button class="chip" onclick="sel('prod',this,'pillow')">🛋️ Pillow</button>
+      <button class="chip" onclick="sel('prod',this,'sticker')">🏷️ Sticker</button>
+      <button class="chip" onclick="sel('prod',this,'poster')">🖼 Poster</button>
+      <button class="chip" onclick="sel('prod',this,'canvas wall art')">🎨 Canvas</button>
+      <button class="chip" onclick="sel('prod',this,'blanket')">🛏️ Blanket</button>
+      <button class="chip" onclick="sel('prod',this,'ornament')">✨ Ornament</button>
+      <button class="chip" onclick="sel('prod',this,'hat / cap')">🧢 Hat</button>
+    </div>
+    <input class="custom-input" id="customProd" type="text" placeholder="Hoặc tự nhập loại sản phẩm..." oninput="customVal('prod',this)" onfocus="customFocus('prod','prodChips',this)">
+    <p class="input-hint">Gõ tự do</p>
+  </div>
+
+  <!-- Mockup type — with custom input -->
+  <div class="card">
+    <p class="section-label">Kiểu mockup</p>
+    <div class="chip-row" id="mockupChips">
+      <button class="chip sel" onclick="sel('mockup',this,'lifestyle')">📸 Lifestyle</button>
+      <button class="chip" onclick="sel('mockup',this,'flat lay')">🗂️ Flat lay</button>
+      <button class="chip" onclick="sel('mockup',this,'studio clean')">⬜ Studio clean</button>
+      <button class="chip" onclick="sel('mockup',this,'on model / person wearing it')">🧍 On model</button>
+      <button class="chip" onclick="sel('mockup',this,'in use / action shot')">🎬 In use</button>
+      <button class="chip" onclick="sel('mockup',this,'gift scene / packaging')">🎁 Gift scene</button>
+      <button class="chip" onclick="sel('mockup',this,'seasonal / holiday scene')">🌿 Seasonal</button>
+      <button class="chip" onclick="sel('mockup',this,'close-up detail shot')">🔍 Close-up</button>
+    </div>
+    <input class="custom-input" id="customMockup" type="text"
+      placeholder="Hoặc tự nhập kiểu mockup... (graduation ceremony scene, hospital setting, gym locker room...)"
+      oninput="customVal('mockup',this)" onfocus="customFocus('mockup','mockupChips',this)">
+    <p class="input-hint">Gõ tự do — không giới hạn</p>
+  </div>
+
+  <!-- Setting -->
+  <div class="card">
+    <p class="section-label">Bối cảnh / Setting</p>
+    <div class="chip-row" id="settingChips">
+      <button class="chip sm-chip sel" onclick="sel('setting',this,'cozy living room interior')">🏠 Living room</button>
+      <button class="chip sm-chip" onclick="sel('setting',this,'bright airy bedroom')">🛏 Bedroom</button>
+      <button class="chip sm-chip" onclick="sel('setting',this,'kitchen counter with morning light')">☕ Kitchen</button>
+      <button class="chip sm-chip" onclick="sel('setting',this,'outdoor garden or patio')">🌿 Garden</button>
+      <button class="chip sm-chip" onclick="sel('setting',this,'cozy coffee shop interior')">☕ Café</button>
+      <button class="chip sm-chip" onclick="sel('setting',this,'graduation ceremony or campus outdoors')">🎓 Graduation</button>
+      <button class="chip sm-chip" onclick="sel('setting',this,'clean office or work desk')">💻 Office</button>
+      <button class="chip sm-chip" onclick="sel('setting',this,'beach or coastal outdoor setting')">🏖️ Beach</button>
+      <button class="chip sm-chip" onclick="sel('setting',this,'rustic wooden table surface')">🪵 Rustic</button>
+      <button class="chip sm-chip" onclick="sel('setting',this,'clean white marble surface')">🪨 Marble</button>
+      <button class="chip sm-chip" onclick="sel('setting',this,'Christmas holiday home')">🎄 Christmas</button>
+      <button class="chip sm-chip" onclick="sel('setting',this,'pure white seamless studio')">⬜ Studio</button>
+    </div>
+    <input class="custom-input" id="customSetting" type="text"
+      placeholder="Hoặc tự nhập bối cảnh... (hospital break room, school hallway, yoga studio...)"
+      oninput="customVal('setting',this)" onfocus="customFocus('setting','settingChips',this)">
+    <p class="input-hint">Gõ tự do</p>
+  </div>
+
+  <!-- Lighting — with custom input -->
+  <div class="card">
+    <p class="section-label">Ánh sáng & Tone màu</p>
+    <div class="chip-row" id="lightChips">
+      <button class="chip sm-chip sel" onclick="sel('light',this,'soft natural daylight with warm golden tones')">☀️ Warm daylight</button>
+      <button class="chip sm-chip" onclick="sel('light',this,'bright airy light, light and airy photography style, white tones')">🌤️ Light & airy</button>
+      <button class="chip sm-chip" onclick="sel('light',this,'moody dramatic lighting with deep shadows and rich contrast')">🌑 Moody dark</button>
+      <button class="chip sm-chip" onclick="sel('light',this,'golden hour warm glow, backlit sunset tones')">🌅 Golden hour</button>
+      <button class="chip sm-chip" onclick="sel('light',this,'clean neutral studio lighting, even exposure')">💡 Studio neutral</button>
+      <button class="chip sm-chip" onclick="sel('light',this,'soft bokeh background, shallow depth of field, dreamy')">✨ Bokeh soft</button>
+      <button class="chip sm-chip" onclick="sel('light',this,'vibrant colorful bright tones, high saturation, cheerful')">🌈 Vibrant</button>
+      <button class="chip sm-chip" onclick="sel('light',this,'cozy warm candlelight or fairy light ambient glow')">🕯️ Cozy warm</button>
+    </div>
+    <input class="custom-input" id="customLight" type="text"
+      placeholder="Hoặc tự nhập ánh sáng... (neon light, overcast diffused, blue hour twilight, harsh midday sun...)"
+      oninput="customVal('light',this)" onfocus="customFocus('light','lightChips',this)">
+    <p class="input-hint">Gõ tự do — bất kỳ kiểu ánh sáng nào</p>
+  </div>
+
+  <!-- Details -->
+  <div class="card">
+    <p class="section-label">Chi tiết thêm</p>
+    <div class="row-2">
+      <div class="field"><label>Niche target *</label><input type="text" id="nicheInput" placeholder="nursing, mom, california, teacher..."></div>
+      <div class="field"><label>Màu design của bạn</label><input type="text" id="designColor" placeholder="pink & gold, navy & white..."></div>
+    </div>
+    <div class="row-2">
+      <div class="field">
+        <label>Góc chụp</label>
+        <select id="angleSelect">
+          <option value="front-facing straight on">Thẳng mặt trước</option>
+          <option value="slight 3/4 angle">Góc 3/4 nhẹ</option>
+          <option value="top-down overhead view">Nhìn từ trên xuống</option>
+          <option value="lifestyle candid angle">Lifestyle tự nhiên</option>
+          <option value="close-up macro detail">Close-up macro</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Số sản phẩm</label>
+        <select id="qtySelect">
+          <option value="single product as the hero">1 sản phẩm (hero)</option>
+          <option value="two products side by side">2 sản phẩm</option>
+          <option value="three products in flat lay">3 sản phẩm flat lay</option>
+          <option value="multiple color variants together">Nhiều màu variant</option>
+        </select>
+      </div>
+    </div>
+    <div class="field" style="margin-top:4px">
+      <label>Props bổ sung (tuỳ chọn)</label>
+      <input type="text" id="propsInput" placeholder="flowers, coffee cup, diploma, stethoscope, pine cones, fairy lights...">
+    </div>
+  </div>
+
+  <button class="gen-btn" onclick="generate()">Tạo prompt mockup scene ↗</button>
+
+  <div class="output-card" id="outputCard">
+    <div class="output-header">
+      <span class="output-title" id="outputTitle">Mockup prompt</span>
+      <div class="out-actions">
+        <button class="act-btn g" onclick="generate()">↻ Generate lại</button>
+        <button class="act-btn" id="copyBtn" onclick="copyPrompt()">Sao chép</button>
+      </div>
+    </div>
+    <div class="tabs" id="tabsEl"></div>
+    <div class="output-text" id="outputText"></div>
+  </div>
+
+  <div class="tip-box" id="tipBox" style="display:none">
+    <strong>Cách dùng:</strong><br>
+    • <strong>ChatGPT (GPT-4o):</strong> Upload ảnh design → paste prompt → AI đặt design vào scene<br>
+    • <strong>DALL-E 3:</strong> Paste trực tiếp → AI tưởng tượng design (không upload ảnh)<br>
+    • <strong>Midjourney:</strong> Dùng tab Midjourney → paste + thêm <code>--ar 1:1</code><br>
+    • <strong>Canva AI:</strong> Mô tả template cần tìm hoặc dùng AI image gen của Canva<br><br>
+    <strong>Best result:</strong> ChatGPT GPT-4o + upload ảnh design thật → AI đặt đúng design vào scene.
+  </div>
+</div>
+
+<script>
+const S = {
+  prod: 'graduation stole',
+  mockup: 'lifestyle',
+  setting: 'cozy living room interior',
+  light: 'soft natural daylight with warm golden tones',
+};
+let currentPrompts = [];
+
+const PROD_DESC = {
+  'graduation stole': 'V-shaped graduation sash draped over shoulders, design on both fabric panels',
+  't-shirt': 'crew-neck t-shirt with design on front chest',
+  'mug': '11oz ceramic coffee mug with design wrapping the cylinder, handle visible',
+  'tote bag': 'canvas tote bag with design on front panel, fabric handles at top',
+  'hoodie': 'pullover hoodie with design on front, hood visible',
+  'tumbler': '20oz skinny stainless steel tumbler with design wrapping the cylinder, lid on top',
+  'phone case': 'slim smartphone case with design on the back panel',
+  'pillow': 'square decorative throw pillow with design on front face, slightly plumped',
+  'sticker': 'die-cut vinyl sticker with white border, placed on a surface',
+  'poster': 'vertical printed wall poster with design, mounted or leaning against a surface',
+  'canvas wall art': 'gallery-wrapped canvas print with design, hanging on wall or leaning',
+  'blanket': 'soft fleece throw blanket with design, casually draped or folded',
+  'ornament': 'round hanging ornament with design, dangling from a hook or branch',
+  'hat / cap': 'structured baseball cap with design on front panel',
+};
+
+const SETTING_PROPS = {
+  'cozy living room interior': 'plush throw blanket, potted plant, warm-toned decorative pillows, soft rug',
+  'bright airy bedroom': 'fresh white linen bedding, morning light, small succulent on nightstand',
+  'kitchen counter with morning light': 'coffee maker, fresh flowers in ceramic vase, cookbooks',
+  'outdoor garden or patio': 'lush greenery, wooden outdoor furniture, dappled sunlight through leaves',
+  'cozy coffee shop interior': 'ceramic latte cup with art, open journal, rustic wooden table',
+  'graduation ceremony or campus outdoors': 'campus architecture, green lawn, diploma tube, mortarboard cap, confetti',
+  'clean office or work desk': 'laptop, small succulent plant, pen holder, clean desk surface',
+  'beach or coastal outdoor setting': 'fine sand surface, ocean blur in background, warm coastal light',
+  'rustic wooden table surface': 'weathered wood grain, dried eucalyptus sprigs, small vintage props',
+  'clean white marble surface': 'white and grey marble, small fresh florals, clean minimalist styling',
+  'Christmas holiday home': 'twinkling fairy lights, wrapped gifts, pine branches, pine cones, warm glow',
+  'pure white seamless studio': 'seamless white backdrop, professional studio lighting, minimal soft shadows',
+};
+
+const MOCKUP_ENV = {
+  'lifestyle': 'photographed in a real-life environment, styled naturally as it would be used, editorial lifestyle photography feel',
+  'flat lay': 'arranged in a flat lay composition viewed directly from above, clean and Pinterest-style',
+  'studio clean': 'photographed on a clean minimalist surface with professional studio lighting',
+  'on model / person wearing it': 'shown on or being held/worn by a person, human connection, relatable and authentic',
+  'in use / action shot': 'captured in active use mid-action or in context of its natural purpose',
+  'gift scene / packaging': 'styled as a gift presentation with ribbon, wrapping elements, or gift box',
+  'seasonal / holiday scene': 'styled with seasonal props and decorations appropriate to the holiday or season',
+  'close-up detail shot': 'extreme close-up focusing on design detail, texture, and print quality',
+};
+
+function getPD(p) { return PROD_DESC[p.toLowerCase()] || `${p} with custom design printed on it`; }
+function getProps(s) { return SETTING_PROPS[s] || 'relevant styled props appropriate to the setting'; }
+function getEnv(m) { return MOCKUP_ENV[m] || `${m} style photography, styled appropriately for this context`; }
+
+function buildPrompt(variant) {
+  const prod = S.prod;
+  const pd = getPD(prod);
+  const env = getEnv(S.mockup);
+  const niche = document.getElementById('nicheInput').value.trim() || 'general buyer';
+  const color = document.getElementById('designColor').value.trim() || 'the product design colors';
+  const props = document.getElementById('propsInput').value.trim();
+  const angle = document.getElementById('angleSelect').value;
+  const qty = document.getElementById('qtySelect').value;
+  const setting = S.setting;
+  const light = S.light;
+  const settingProps = getProps(setting);
+  const allProps = props ? `${settingProps}, ${props}` : settingProps;
+
+  if (variant === 'full') return `MOCKUP SCENE PROMPT
+Product: ${prod} — ${pd}
+Design colors: ${color}
+Mockup type: ${S.mockup}
+Setting: ${setting}
+Lighting: ${light}
+Angle: ${angle}
+Quantity: ${qty}
+
+SCENE DESCRIPTION:
+${env}. The product is placed in a ${setting} with ${allProps}. Lighting: ${light}.
+
+TARGET AUDIENCE: ${niche}
+Style all props, colors, and composition to appeal specifically to ${niche} buyers. The overall scene should feel aspirational and relatable to this audience.
+
+PHOTOGRAPHY REQUIREMENTS:
+- The ${prod} is the clear hero of the image
+- Sharp focus on the product, complementary soft background
+- Commercial product photography quality
+- Colors feel cohesive and intentional
+- ${light}
+- No text overlays, no watermarks
+
+OUTPUT: Square 1:1 format, high resolution, Etsy listing photo quality.`;
+
+  if (variant === 'chatgpt') return `Create a ${S.mockup} product mockup photo of this ${prod} (${pd}, ${color} design).
+
+Scene: ${setting}
+Lighting: ${light}
+Camera angle: ${angle}
+Quantity: ${qty}
+Props: ${allProps}
+
+Target audience: ${niche} — style the scene to feel authentic and aspirational for this buyer.
+
+The product is the hero. Commercial photography quality. Square 1:1 format. No watermarks.`;
+
+  if (variant === 'midjourney') return `product mockup photography, ${pd} with ${color} design, ${env}, ${setting}, ${light}, styled with ${allProps}, ${angle}, ${qty}, appealing to ${niche} buyers, commercial Etsy product photography, highly detailed, sharp product focus, professional styling --ar 1:1 --v 6.1 --style raw`;
+
+  return `Mockup scene for ${prod} targeted at ${niche}.
+Setting: ${setting} | Lighting: ${light} | Style: ${env}
+The ${pd} (${color}) is hero product. Props: ${allProps}. Angle: ${angle}. ${qty}.
+Commercial Etsy listing photo, square format.`;
+}
+
+function generate() {
+  if (!document.getElementById('nicheInput').value.trim()) {
+    alert('Hãy nhập niche target trước');
+    return;
+  }
+  const niche = document.getElementById('nicheInput').value.trim();
+  currentPrompts = [
+    { label: 'Full detail',       text: buildPrompt('full') },
+    { label: 'ChatGPT / DALL-E',  text: buildPrompt('chatgpt') },
+    { label: 'Midjourney',        text: buildPrompt('midjourney') },
+    { label: 'Canva AI',          text: buildPrompt('canva') },
+  ];
+  const card = document.getElementById('outputCard');
+  card.style.display = 'block';
+  document.getElementById('outputTitle').textContent = `${S.prod} · ${S.mockup} · ${niche}`;
+  const tabsEl = document.getElementById('tabsEl');
+  tabsEl.innerHTML = '';
+  currentPrompts.forEach((p, i) => {
+    const t = document.createElement('button');
+    t.className = 'tab' + (i === 0 ? ' active' : '');
+    t.textContent = p.label;
+    t.onclick = () => {
+      tabsEl.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById('outputText').textContent = currentPrompts[i].text;
+    };
+    tabsEl.appendChild(t);
+  });
+  document.getElementById('outputText').textContent = currentPrompts[0].text;
+  document.getElementById('tipBox').style.display = 'block';
+  setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+}
+
+function copyPrompt() {
+  navigator.clipboard.writeText(document.getElementById('outputText').textContent).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = 'Đã sao chép ✓'; btn.classList.add('ok');
+    setTimeout(() => { btn.textContent = 'Sao chép'; btn.classList.remove('ok'); }, 2000);
+  });
+}
+
+// ── SELECTIONS ─────────────────────────────────────────────────────────────────
+function sel(key, btn, v) {
+  document.querySelectorAll('#' + key + 'Chips .chip').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  S[key] = v;
+  const ci = document.getElementById('custom' + key.charAt(0).toUpperCase() + key.slice(1));
+  if (ci) { ci.value = ''; ci.classList.remove('sel'); }
+}
+
+function customFocus(key, rowId, inp) {
+  document.querySelectorAll('#' + rowId + ' .chip').forEach(b => b.classList.remove('sel'));
+  if (inp.value.trim()) { S[key] = inp.value.trim(); inp.classList.add('sel'); }
+}
+
+function customVal(key, inp) {
+  const v = inp.value.trim();
+  document.querySelectorAll('#' + key + 'Chips .chip').forEach(b => b.classList.remove('sel'));
+  if (v) { S[key] = v; inp.classList.add('sel'); }
+  else { inp.classList.remove('sel'); }
+}
+
+function handleFile(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const z = document.getElementById('uploadZone');
+    z.classList.add('has-image');
+    z.innerHTML = `<img src="${e.target.result}" alt="preview"><button class="change-btn" onclick="event.stopPropagation();clearUpload()">Đổi ảnh</button>`;
+  };
+  reader.readAsDataURL(file);
+}
+function clearUpload() {
+  const z = document.getElementById('uploadZone');
+  z.classList.remove('has-image');
+  z.innerHTML = `<div class="upload-icon">🎨</div><p class="upload-text">Upload ảnh design hoặc sản phẩm của bạn</p><p class="upload-sub">Chỉ để xem — không gửi đi đâu cả</p>`;
+  z.onclick = () => document.getElementById('fileInput').click();
+  document.getElementById('fileInput').value = '';
+}
+</script>
+</body>
+</html>
